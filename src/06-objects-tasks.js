@@ -20,8 +20,12 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
+function Rectangle(width, height) {
+  return {
+    width,
+    height,
+    getArea: () => width * height,
+  };
 }
 
 
@@ -35,8 +39,8 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
+function getJSON(obj) {
+  return JSON.stringify(obj);
 }
 
 
@@ -51,8 +55,10 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
+function fromJSON(proto, json) {
+  const result = JSON.parse(json);
+  Object.setPrototypeOf(result, proto);
+  return result;
 }
 
 
@@ -111,32 +117,106 @@ function fromJSON(/* proto, json */) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+
+  elementStore: '',
+
+  idStore: '',
+
+  classStore: '',
+
+  attrStore: '',
+
+  pseudoClassStore: '',
+
+  pseudoElementStore: '',
+
+  element(value) {
+    if (this.elementStore) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+    if (this.idStore
+      || this.classStore || this.attrStore || this.pseudoClassStore || this.pseudoElementStore) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    const newBuilder = {
+      ...this,
+    };
+    newBuilder.elementStore = value;
+    return newBuilder;
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    if (this.idStore) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+    if (this.classStore || this.attrStore || this.pseudoClassStore || this.pseudoElementStore) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    const newBuilder = {
+      ...this,
+    };
+    newBuilder.idStore = `#${value}`;
+    return newBuilder;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    if (this.attrStore || this.pseudoClassStore || this.pseudoElementStore) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    const newBuilder = {
+      ...this,
+    };
+    newBuilder.classStore += `.${value}`;
+    return newBuilder;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    if (this.pseudoClassStore || this.pseudoElementStore) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    const newBuilder = {
+      ...this,
+    };
+    newBuilder.attrStore += `[${value}]`;
+    return newBuilder;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    if (this.pseudoElementStore) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    const newBuilder = {
+      ...this,
+    };
+    newBuilder.pseudoClassStore += `:${value}`;
+    return newBuilder;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    if (this.pseudoElementStore) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+    const newBuilder = {
+      ...this,
+    };
+    newBuilder.pseudoElementStore = `::${value}`;
+    return newBuilder;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  stringify() {
+    const newBuilder = {
+      ...this,
+    };
+    const result = newBuilder.combinedStorage || `${newBuilder.elementStore}${newBuilder.idStore}${newBuilder.classStore}${newBuilder.attrStore}${newBuilder.pseudoClassStore}${newBuilder.pseudoElementStore}`;
+    return result;
+  },
+
+  combine(selector1, combinator, selector2) {
+    const newBuilder = {
+      ...this,
+    };
+    newBuilder.combinedStorage = `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+    return newBuilder;
   },
 };
 
